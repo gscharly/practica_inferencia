@@ -1,1 +1,1 @@
-# practica_inferencia
+# Práctica de inferencia
