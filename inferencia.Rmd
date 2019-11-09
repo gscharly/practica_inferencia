@@ -1,0 +1,29 @@
+---
+title: "Práctica Inferencia"
+author: "
+- name: Paula Santamaría Villaverde
+- name: Manuel Jesús Pertejo Lope
+- name: Carlos Gómez Sánchez
+date: "9 de noviembre de 2019"
+output: 
+  pdf_document: default
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries}
+library(plyr)
+```
+
+### Lectura del conjunto de datos seleccionado
+El conjunto de datos seleccionado contiene información acerca del número de suicidios en diferentes países desde  1987 hasta 2016, además de diferentes variables sociodemográficas.
+
+```{r data}
+suicides <- read.csv(file="suicides.csv", header=TRUE, sep=",")
+```
+
+### Muestreo del conjunto de datos
