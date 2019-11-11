@@ -51,7 +51,7 @@ sprintf("La media de los suicidios entre 1985 y 2000 es %0.2f con una desviació
 sprintf("La media de los suicidios entre 2001 y 2016 es %0.2f con una desviación de %0.2f", meanB, sdB)
 ```
 
-Para empezar, seleccionemos una muestra de cada uno de los dos conjuntos de datos.
+Después, seleccionemos una muestra de cada uno de los dos conjuntos de datos.
 
 ```{r sample}
 set.seed(1)
@@ -72,3 +72,23 @@ boxplot(datosA$suicides_no)
 boxplot(datosB$suicides_no)
 ```
 Observamos que hay muchos outliers, lo que dificulta observar la distribución con claridad.
+
+### Estimación puntual
+Para comenzar, se realiza una estimación puntual de la media del número de suicidios en cada una de las muestras de datos. Consideramos que nuestra muestra ha sido extraida de una población con media \mu desconocida y \sigma**2 conocida, y supongamos además que la distribución de estas variables es normal. Además, dado que el número de muestras es considerable (500 muestras), por el Teorema del Límite Central podemos aproximar la distribución muestral a una distribución de media la media muestral, y de varianza la varianza muestral.
+
+```{r estimacion_puntual}
+meanMuestraA <- mean(muestraA$suicides_no)
+meanMuestraB <- mean(muestraB$suicides_no)
+
+sprintf("La media muestral de los suicidios entre 1985 y 2000 es %0.2f ", meanMuestraA)
+sprintf("La media muestral de los suicidios entre 2001 y 2016 es %0.2f ", meanMuestraB)
+```
+
+### Intervalo de confianza para la característica en una de las muestras
+Ya hemos determinado, por el TLC, que la distribución de la media muestral se puede aproximar a una normal. Además, conocemos la varianza de la población. Si consideramos una confianza del 95%, el intervalo de confianza para la media de la muestra A sería:
+```{r ic}
+ci=meanMuestraA-qnorm(0.95)*sdA/sqrt(nrow(muestraA))
+cs=meanMuestraA+qnorm(0.95)*sdA/sqrt(nrow(muestraA))
+c(ci,cs)
+
+```
