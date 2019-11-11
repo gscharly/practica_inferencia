@@ -20,10 +20,55 @@ library(plyr)
 ```
 
 ### Lectura del conjunto de datos seleccionado
-El conjunto de datos seleccionado contiene información acerca del número de suicidios en diferentes países desde  1987 hasta 2016, además de diferentes variables sociodemográficas.
+El conjunto de datos seleccionado contiene información acerca del número de suicidios en diferentes países desde  1985 hasta 2016, además de diferentes variables sociodemográficas.
 
 ```{r data}
 suicides <- read.csv(file="suicides.csv", header=TRUE, sep=",")
 ```
 
 ### Muestreo del conjunto de datos
+En primer lugar, seleccionamos dos periodos distintos de tiempo para evaluar los datos. Por ejemplo, desde 1985 hasta 2000 y desde 2001 hasta 2016.
+
+```{r separate_data}
+datosA <- suicides[suicides$year>=1985 & suicides$year<=2000,]
+datosB <- suicides[suicides$year>=2001,]
+
+sprintf("Número de registros desde 1985 a 2000: %i", nrow(datosA))
+sprintf("Número de registros desde 1985 a 2000: %i", nrow(datosB))
+```
+La principal característica que queremos estudiar es el número de suicidios, principalemente comparando los dos periodos de tiempo indicados, y además proponiendo otras comparaciones en base a las distintas variables presentes, como pueden ser el género, la edad, la región...
+
+Calculamos primero la media y la varianza de los datos completos:
+
+```{r}
+meanA <- mean(datosA$suicides_no)
+sdA <- sd(datosA$suicides_no)
+meanB <- mean(datosB$suicides_no)
+sdB <- sd(datosB$suicides_no)
+
+
+sprintf("La media de los suicidios entre 1985 y 2000 es %0.2f con una desviación de %0.2f", meanA, sdA)
+sprintf("La media de los suicidios entre 2001 y 2016 es %0.2f con una desviación de %0.2f", meanB, sdB)
+```
+
+Para empezar, seleccionemos una muestra de cada uno de los dos conjuntos de datos.
+
+```{r sample}
+set.seed(1)
+muestraA <- datosA[sample(nrow(datosA),500),]
+muestraB <- datosB[sample(nrow(datosB),500),]
+
+hist(datosA$suicides_no, 
+     col = 'darkslategray3', border = 'white', 
+     main = 'Histograma suicides A', sub = 'Datos A', 
+     xlab = 'Suicides', ylab = 'Densidad')
+
+hist(datosB$suicides_no, 
+     col = 'darkslategray3', border = 'white', 
+     main = 'Histograma suicides B', sub = 'Datos A', 
+     xlab = 'Suicides', ylab = 'Densidad')
+
+boxplot(datosA$suicides_no)
+boxplot(datosB$suicides_no)
+```
+Observamos que hay muchos outliers, lo que dificulta observar la distribución con claridad.
