@@ -31,14 +31,36 @@ suicides <- dataset[columnas_deseadas]
 
 #renombramos las columnas para facilitar la comprensión
 names(suicides)[1:10] <- c('country', 'year', 'sex', 'age', 'suicides_no', 'population', 'suicides_100k_pop', 'HDI_for_year', 'gdp_for_year ($)', 'gdp_per_capita ($)')
+
 knitr::kable(head(suicides, 10), caption = 'Tabla 1. Primeras 10 filas del conjunto de datos')
 ```
+### Justificación e hipótesis
+
+Segñun la Organización Mundial de la Salud (OMS, 2019) cerca de 800.000 personas se suicidad al año (OMS, 2019). Dentro de este fenómeno pueden encontrarse factores de riesgo de caracter individual y social. 
+
+En este sentido, los estudios muestran cómo el nivel socioeconómico y el género forman parte de dichos factores. 
+
+La tasa de ideación suicida y los intentos de suicidio son mayores en mujeres. A pesar de esto, la frecuencia de suicidio entre los hombres es mayor pudiendo deberse al uso de mecanismos más letales (Mejía, Sanhuenza y González, 2011).
+
+Por otro lado, el nivel económico parece tomar papel en esta diferencia entre ambos géneros. En los países de altos ingresos, se suicidan tres veces más hombres que mujeres, pero en los de ingresos bajos y medianos la razón, hombre: mujer es mucho menor, de 1,5 hombres por cada mujer (Corona, Hernández y García, 2016). 
 
 
 ### Muestreo del conjunto de datos
+
 
 ### Anexo
 ```{r tabla1, echo=FALSE}
 knitr::kable(unique(suicides$country), caption = 'Tabla 1. Países incluídos en la base de datos')
 ```
+
+### Referencias
+
+** Corona, B., Hernández, M., y García, R. M. (2016). Mortalidad por suicidio, factores de riesgos y protectores. Revista Habanera de Ciencias Médicas, 15(1).
+
+** Mejía, M., Sanhuenza, P., y González, J. (2011). Factores de riesgo y contexto del suicidio. Revista Memoriza, 8, 15-25.
+
+** OMS (2019). Organización Mundial de la Salud. https://www.who.int/es/news-room/fact-sheets/detail/suicide
+
+
+
 
