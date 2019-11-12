@@ -1,13 +1,8 @@
 ---
 title: "Práctica Inferencia"
-author: "
-- name: Paula Santamaría Villaverde
-- name: Manuel Jesús Pertejo Lope
-- name: Carlos Gómez Sánchez
+author: " "
 date: "9 de noviembre de 2019"
 output: 
-  pdf_document: default
-  word_document: default
   html_document: default
 ---
 
@@ -17,14 +12,33 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r libraries}
 library(plyr)
+library(knitr)
 ```
 
 ### Lectura del conjunto de datos seleccionado
-El conjunto de datos seleccionado contiene información acerca del número de suicidios en diferentes países desde  1985 hasta 2016, además de diferentes variables sociodemográficas.
 
-```{r data}
-suicides <- read.csv(file="suicides.csv", header=TRUE, sep=",")
+El conjunto de datos seleccionado contiene información acerca del número de suicidios según sexo y edad (dividido en seis grupos de edad) ocurridos en 101 países (ver tabla 1 en Anexo) desde 1985 hasta 2016. Además de esto, para cada año aparece el PIB del país y el PIB per cápita. Este conjunto de datos también cuenta con el índice de desarrollo humano. 
+
+```{r vacío1}
 ```
 
+```{r data}
+dataset <- read.csv(file="suicides.csv", header=TRUE, sep=",")
+
+#seleccionamos solo aquellas columnas que tienen interés para el análisis
+columnas_deseadas <- c('ï..country', 'year', 'sex', 'age', 'suicides_no', 'population', 'suicides.100k.pop', 'country.year', 'gdp_for_year....', 'gdp_per_capita....')
+suicides <- dataset[columnas_deseadas]
+
+#renombramos las columnas para facilitar la comprensión
+names(suicides)[1:10] <- c('country', 'year', 'sex', 'age', 'suicides_no', 'population', 'suicides_100k_pop', 'HDI_for_year', 'gdp_for_year ($)', 'gdp_per_capita ($)')
+knitr::kable(head(suicides, 10), caption = 'Tabla 1. Primeras 10 filas del conjunto de datos')
+```
+
+
 ### Muestreo del conjunto de datos
+
+### Anexo
+```{r tabla1, echo=FALSE}
+knitr::kable(unique(suicides$country), caption = 'Tabla 1. Países incluídos en la base de datos')
+```
 
