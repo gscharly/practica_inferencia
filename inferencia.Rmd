@@ -34,6 +34,7 @@ names(suicides)[1:10] <- c('country', 'year', 'sex', 'age', 'suicides_no', 'popu
 
 knitr::kable(head(suicides, 10), caption = 'Tabla 1. Primeras 10 filas del conjunto de datos')
 ```
+
 ### Justificación e hipótesis
 
 Segñun la Organización Mundial de la Salud (OMS, 2019) cerca de 800.000 personas se suicidad al año (OMS, 2019). Dentro de este fenómeno pueden encontrarse factores de riesgo de caracter individual y social. 
@@ -47,6 +48,79 @@ Por otro lado, el nivel económico parece tomar papel en esta diferencia entre a
 
 ### Muestreo del conjunto de datos
 
+Basándonos en la bibliografía anterior, se plantea comparar el número de suicidios entre hombres y mujeres para todos los países y años conjuntamente. 
+
+De esta forma, empezaremos dividiendo el archivo y creando dos subpoblaciones.
+
+```{r subpoblaciones}
+pobFemale <- subset(suicides, sex == 'female')
+pobMale <- subset(suicides, sex == 'male')
+
+#Comprobando cual es la proporción de hombres frente a mujeres de cara al muestreo
+femalePerc <- (length(pobFemale$sex))/(length(suicides$sex))*100
+malePerc <- (length(pobMale$sex))/(length(suicides$sex))*100
+```
+```{r print1, echo=FALSE}
+sprintf('De la población total el %i %% son mujeres y el otro %i %% son hombres. Cada una de las subpoblaciones tienen %i sujetos.', femalePerc, malePerc, length(pobMale$sex))
+```
+
+Ahora tomaremos una muestra de 5000 sujetos para cada una de las subpoblaciones. 
+
+```{r muestreo}
+set.seed(1)
+datosFemale <- pobFemale[sample(nrow(pobFemale),5000),]
+datosMale <- pobMale[sample(nrow(pobMale),5000),]
+
+print(summary(datosFemale$suicides_no))
+print(summary(datosMale$suicides_no))
+```
+
+### Hipótesis
+
+Después de la división en subpoblaciones, planteamos la siguiente hipótesis de acuerdo a los estudios.
+
+H ~0~ = $\mu$ ~hombres~ >= $\mu$ ~mujeres~
+H ~1~ = $\mu$ ~hombres~ < $\mu$ ~mujeres~
+
+### Estimación puntual e intervalos de confianza
+
+```{r estimaciónMediaMujeres}
+
+#IC de la media dada varianza poblacional conocida
+mediaF=mean(datosFemale$suicides_no)
+desvF=sqrt(var(pobFemale$suicides_no))
+
+#confianza de 0.90 
+ci=mediaF-qnorm(0.95)*desvF/sqrt(length(datosFemale))
+cs=mediaF+qnorm(0.95)*desvF/sqrt(length(datosFemale))
+```
+```{r print2}
+sprintf('El intervalo de confianza para la media de suicidios en mujeres con $\alpha$ = 0.1 es: %f y %f', ci, cs)
+
+#Revisar escribir alpha ahí dentro
+```
+```{r estimaciónMediaHombres}
+
+#IC de la media dada varianza poblacional conocida
+mediaM=mean(datosMale$suicides_no)
+desvM=sqrt(var(pobMale$suicides_no))
+
+#confianza de 0.90 
+ci=mediaM-qnorm(0.95)*desvM/sqrt(length(datosMale))
+cs=mediaM+qnorm(0.95)*desvM/sqrt(length(datosMale))
+```
+```{r print2}
+sprintf('El intervalo de confianza para la media de suicidios en mujeres con $\alpha$ = 0.1 es: %f y %f', ci, cs)
+
+#Revisar escribir alpha ahí dentro
+```
+
+### Contraste de hipótesis para la comparación de las muestras
+
+```{r tstudent}
+t.test(datosFemale$suicides_no, datosMale$suicides_no, alternative = 'less', conf.level = 0.90)
+
+```
 
 ### Anexo
 ```{r tabla1, echo=FALSE}
