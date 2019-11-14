@@ -19,14 +19,11 @@ library(knitr)
 
 El conjunto de datos seleccionado contiene información acerca del número de suicidios según sexo y edad (dividido en seis grupos de edad) ocurridos en 101 países (ver tabla 1 en Anexo) desde 1985 hasta 2016. Además de esto, para cada año aparece el PIB del país y el PIB per cápita. Este conjunto de datos también cuenta con el índice de desarrollo humano. 
 
-```{r vacío1}
-```
-
 ```{r data}
 dataset <- read.csv(file="suicides.csv", header=TRUE, sep=",")
 
 #seleccionamos solo aquellas columnas que tienen interés para el análisis
-columnas_deseadas <- c('ï..country', 'year', 'sex', 'age', 'suicides_no', 'population', 'suicides.100k.pop', 'country.year', 'gdp_for_year....', 'gdp_per_capita....')
+columnas_deseadas <- c('country', 'year', 'sex', 'age', 'suicides_no', 'population', 'suicides.100k.pop', 'country.year', 'gdp_for_year....', 'gdp_per_capita....')
 suicides <- dataset[columnas_deseadas]
 
 #renombramos las columnas para facilitar la comprensión
@@ -37,7 +34,7 @@ knitr::kable(head(suicides, 10), caption = 'Tabla 1. Primeras 10 filas del conju
 
 ### Justificación e hipótesis
 
-Segñun la Organización Mundial de la Salud (OMS, 2019) cerca de 800.000 personas se suicidad al año (OMS, 2019). Dentro de este fenómeno pueden encontrarse factores de riesgo de caracter individual y social. 
+Según la Organización Mundial de la Salud (OMS, 2019) cerca de 800.000 personas se suicidad al año (OMS, 2019). Dentro de este fenómeno pueden encontrarse factores de riesgo de caracter individual y social. 
 
 En este sentido, los estudios muestran cómo el nivel socioeconómico y el género forman parte de dichos factores. 
 
@@ -59,6 +56,7 @@ pobMale <- subset(suicides, sex == 'male')
 #Comprobando cual es la proporción de hombres frente a mujeres de cara al muestreo
 femalePerc <- (length(pobFemale$sex))/(length(suicides$sex))*100
 malePerc <- (length(pobMale$sex))/(length(suicides$sex))*100
+
 ```
 ```{r print1, echo=FALSE}
 sprintf('De la población total el %i %% son mujeres y el otro %i %% son hombres. Cada una de las subpoblaciones tienen %i sujetos.', femalePerc, malePerc, length(pobMale$sex))
@@ -74,7 +72,49 @@ datosMale <- pobMale[sample(nrow(pobMale),5000),]
 print(summary(datosFemale$suicides_no))
 print(summary(datosMale$suicides_no))
 ```
+Vemos que el valor de la mediana está bastante alejado del valor de la media para ambas muestras, lo que nos indica que aparecen datos de suicidios muy extremos (outliers) que afectan bastante a dicho valor. Esto podría deberse a factores como la existencia en el dataset de países cuya población es muy superior a la de otros también presentes. A continuación se va a comprobar este hecho de manera sencilla filtrando la muestra (correspondiente a las mujeres) para quedarnos con los outliers.
 
+```{r suicideoutliers}
+female_quantiles = quantile(datosFemale$suicides_no,probs = c(0.25,0.75))
+outlier_treshold = as.numeric(female_quantiles[2]) + 1.5*(as.numeric(female_quantiles[2]) - as.numeric(female_quantiles[1]))
+female_outliers = datosFemale[datosFemale$suicides_no > outlier_treshold,]
+```
+```{r print2, echo=FALSE}
+sprintf('El subconjunto de outliers está compuesto de %i elementos, representando el %.3f%% de la muestra total.', nrow(female_outliers),dim(female_outliers)[1]/5000)
+```
+A continuación se muestra una tabla con los 10 países que aparecen en más ocasiones dentro del conjunto de outliers de la muestra, junto al número de veces que aparecen:
+
+```{r paisesoutliers}
+knitr::kable(sort(table(female_outliers$country), decreasing = TRUE)[1:10], caption = 'Tabla 2. Top 10 outliers')
+```
+Se puede ver que se trata de países con poblaciones bastante altas en general. Como última comprabación, vamos ver como varía la media de la población en el subconjunto de outliers con respecto a la muestra total:
+
+```{r print3, echo=FALSE}
+sprintf('La población media en los outliers es %.2f, mientras que la muestra total es tan solo de %.2f.', mean(female_outliers$population),mean(datosFemale$population))
+```
+Algo similar sucede si realizamos este mismo análisis sobre la muestra de hombres. Con este sencillo análisis se ha podido comprobar que la aparición de valores tan dispares en la muestra se debe a la diferencia en cuanto a población entre los países del conjunto. Por ello, se ha optado por realizar nuestro análisis sobre el número de suicidios por cada 100.000 habitantes en lugar de hacerlo directamente sobre el número de suicidios como se había comentado previamente.
+
+A continuación se muestran ciertos estadísticos calculados sobre ambas muestras para el número de suicidios por cada 100.000 habitantes:
+```{r muestreo2, echo=FALSE}
+print(summary(datosFemale$suicides_100k_pop))
+print(summary(datosMale$suicides_100k_pop))
+```
+Podemos ver que a pesar de que siguen apareciendo outliers, los datos se distribuyen de una manera mucho más uniforme. Esto se ve también reflejado en el siguiente diagrama de cajas:
+
+```{r boxplot2}
+boxplot(datosFemale$suicides_100k_pop, datosMale$suicides_100k_pop,
+main = "Comparativa suicidios mujeres-hombres por 100k habitantes",
+names = c("Mujeres", "Hombres"),
+las = 2,
+col = c("aquamarine","aquamarine1"),
+border = "black",
+horizontal = F,
+ylab = 'suicidios por 100k hab.',
+notch = TRUE,
+outline = F
+)
+
+```
 ### Hipótesis
 
 Después de la división en subpoblaciones, planteamos la siguiente hipótesis de acuerdo a los estudios.
@@ -86,34 +126,61 @@ H ~1~ = $\mu$ ~hombres~ < $\mu$ ~mujeres~
 
 ```{r estimaciónMediaMujeres}
 
-#IC de la media dada varianza poblacional conocida
-mediaF=mean(datosFemale$suicides_no)
-desvF=sqrt(var(pobFemale$suicides_no))
+#IC de la media dada con varianza poblacional conocida y confianza de 0.9
+conf = 0.9
+alpha = 1 - conf
+mediaF=mean(datosFemale$suicides_100k_pop)
+desvF=sqrt(var(pobFemale$suicides_100k_pop))
 
-#confianza de 0.90 
-ci=mediaF-qnorm(0.95)*desvF/sqrt(length(datosFemale))
-cs=mediaF+qnorm(0.95)*desvF/sqrt(length(datosFemale))
+ci=mediaF-qnorm(1 - alpha/2)*desvF/sqrt(dim(datosFemale)[1])
+cs=mediaF+qnorm(1 - alpha/2)*desvF/sqrt(dim(datosFemale)[1])
 ```
-```{r print2}
-sprintf('El intervalo de confianza para la media de suicidios en mujeres con $\alpha$ = 0.1 es: %f y %f', ci, cs)
+```{r print4}
+sprintf('El intervalo de confianza para la media de suicidios por cada 100 mil habitantes en mujeres con $\alpha$ = 0.1 es: (%f,%f)', ci, cs)
+
 
 #Revisar escribir alpha ahí dentro
 ```
 ```{r estimaciónMediaHombres}
 
-#IC de la media dada varianza poblacional conocida
-mediaM=mean(datosMale$suicides_no)
-desvM=sqrt(var(pobMale$suicides_no))
+#IC de la media con varianza poblacional conocida y confianza de 0.9
+mediaM=mean(datosMale$suicides_100k_pop)
+desvM=sqrt(var(pobMale$suicides_100k_pop))
 
 #confianza de 0.90 
-ci=mediaM-qnorm(0.95)*desvM/sqrt(length(datosMale))
-cs=mediaM+qnorm(0.95)*desvM/sqrt(length(datosMale))
+ci=mediaM-qnorm(1 - alpha/2)*desvM/sqrt(dim(datosMale)[1])
+cs=mediaM+qnorm(1 - alpha/2)*desvM/sqrt(dim(datosMale)[1])
 ```
-```{r print2}
-sprintf('El intervalo de confianza para la media de suicidios en mujeres con $\alpha$ = 0.1 es: %f y %f', ci, cs)
+```{r print5}
+sprintf('El intervalo de confianza para la media de suicidios por cada 100 mil habitantes en hombres con $\alpha$ = 0.1 es: (%f,%f)', ci, cs)
 
 #Revisar escribir alpha ahí dentro
 ```
+## Intervalo de confianza para la comparación medias
+
+Se va a proporcionar un intervalo de confianza para la diferencia de medias en cuanto a número de suicidios por cada 100.000 habitantes entre mujeres y hombres. El parámetro que se estima sería $\theta$ = $\mu_{hombres}$ - $\mu_{mujeres}$.
+
+```{r estimaciónMediaHombres}
+#IC de la diferencia de medias con varianza diferentes pero conocidas y confianza de 0.9
+
+meanF = mean(datosFemale$suicides_100k_pop)
+meanM = mean(datosMale$suicides_100k_pop)
+varF = var(datosFemale$suicides_100k_pop)
+varM = var(datosMale$suicides_100k_pop)
+nF = dim(datosFemale)[1]
+nM = dim(datosMale)[1]
+
+ci=((meanM-meanF)-qnorm(1 - alpha/2)*sqrt(varM/nM+varF/nF))
+cs=((meanM-meanF)+qnorm(1 - alpha/2)*sqrt(varM/nM+varF/nF))
+
+```
+```{r print5}
+sprintf('El intervalo de confianza para la media de suicidios por cada 100 mil habitantes en hombres con $\alpha$ = 0.1 es: (%f,%f)', ci, cs)
+
+#Revisar escribir alpha ahí dentro
+```
+
+
 
 ### Contraste de hipótesis para la comparación de las muestras
 
