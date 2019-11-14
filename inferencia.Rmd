@@ -175,7 +175,7 @@ cs=((meanM-meanF)+qnorm(1 - alpha/2)*sqrt(varM/nM+varF/nF))
 
 ```
 ```{r print5}
-sprintf('El intervalo de confianza para la media de suicidios por cada 100 mil habitantes en hombres con $\alpha$ = 0.1 es: (%f,%f)', ci, cs)
+sprintf('El intervalo de confianza para la diferencia en la media de suicidios por cada 100 mil habitantes entre hombres y mujeres con $\alpha$ = 0.1 es: (%f,%f)', ci, cs)
 
 #Revisar escribir alpha ahí dentro
 ```
