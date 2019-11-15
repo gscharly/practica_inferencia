@@ -13,6 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r libraries}
 library(plyr)
 library(knitr)
+library(ggplot2)
 ```
 
 ### Lectura del conjunto de datos seleccionado
@@ -23,18 +24,18 @@ El conjunto de datos seleccionado contiene información acerca del número de su
 dataset <- read.csv(file="suicides.csv", header=TRUE, sep=",")
 
 #seleccionamos solo aquellas columnas que tienen interés para el análisis
-columnas_deseadas <- c('country', 'year', 'sex', 'age', 'suicides_no', 'population', 'suicides.100k.pop', 'country.year', 'gdp_for_year....', 'gdp_per_capita....')
+columnas_deseadas <- c('ï..country', 'year', 'sex', 'age', 'suicides_no', 'population', 'suicides.100k.pop', 'gdp_for_year....', 'gdp_per_capita....')
 suicides <- dataset[columnas_deseadas]
 
 #renombramos las columnas para facilitar la comprensión
-names(suicides)[1:10] <- c('country', 'year', 'sex', 'age', 'suicides_no', 'population', 'suicides_100k_pop', 'HDI_for_year', 'gdp_for_year ($)', 'gdp_per_capita ($)')
+names(suicides)[1:9] <- c('country', 'year', 'sex', 'age', 'suicides_no', 'population', 'suicides_100k_pop', 'gdp_for_year ($)', 'gdp_per_capita ($)')
 
 knitr::kable(head(suicides, 10), caption = 'Tabla 1. Primeras 10 filas del conjunto de datos')
 ```
 
 ### Justificación e hipótesis
 
-Según la Organización Mundial de la Salud (OMS, 2019) cerca de 800.000 personas se suicidad al año (OMS, 2019). Dentro de este fenómeno pueden encontrarse factores de riesgo de caracter individual y social. 
+Según la Organización Mundial de la Salud cerca de 800.000 personas se suicidad al año (OMS, 2019). Dentro de este fenómeno pueden encontrarse factores de riesgo de caracter individual y social. 
 
 En este sentido, los estudios muestran cómo el nivel socioeconómico y el género forman parte de dichos factores. 
 
@@ -45,7 +46,7 @@ Por otro lado, el nivel económico parece tomar papel en esta diferencia entre a
 
 ### Muestreo del conjunto de datos
 
-Basándonos en la bibliografía anterior, se plantea comparar el número de suicidios entre hombres y mujeres para todos los países y años conjuntamente. 
+Basándonos en la bibliografía anterior, se plantea comparar el número de suicidios entre hombres y mujeres para todos los países y años tomados de manera conjunta. 
 
 De esta forma, empezaremos dividiendo el archivo y creando dos subpoblaciones.
 
@@ -59,7 +60,7 @@ malePerc <- (length(pobMale$sex))/(length(suicides$sex))*100
 
 ```
 ```{r print1, echo=FALSE}
-sprintf('De la población total el %i %% son mujeres y el otro %i %% son hombres. Cada una de las subpoblaciones tienen %i sujetos.', femalePerc, malePerc, length(pobMale$sex))
+sprintf('De la población total el %i %% son mujeres y el otro %i %% son hombres. Cada una de las subpoblaciones tiene %i sujetos.', femalePerc, malePerc, length(pobMale$sex))
 ```
 
 Ahora tomaremos una muestra de 5000 sujetos para cada una de las subpoblaciones. 
@@ -76,25 +77,23 @@ Vemos que el valor de la mediana está bastante alejado del valor de la media pa
 
 ```{r suicideoutliers}
 female_quantiles = quantile(datosFemale$suicides_no,probs = c(0.25,0.75))
+print(female_quantiles)
 outlier_treshold = as.numeric(female_quantiles[2]) + 1.5*(as.numeric(female_quantiles[2]) - as.numeric(female_quantiles[1]))
 female_outliers = datosFemale[datosFemale$suicides_no > outlier_treshold,]
 ```
 ```{r print2, echo=FALSE}
 sprintf('El subconjunto de outliers está compuesto de %i elementos, representando el %.3f%% de la muestra total.', nrow(female_outliers),dim(female_outliers)[1]/5000)
 ```
-A continuación se muestra una tabla con los 10 países que aparecen en más ocasiones dentro del conjunto de outliers de la muestra, junto al número de veces que aparecen:
 
-```{r paisesoutliers}
-knitr::kable(sort(table(female_outliers$country), decreasing = TRUE)[1:10], caption = 'Tabla 2. Top 10 outliers')
+```{r Pearson}
+cor.test(datosFemale$suicides_no, datosFemale$population)
+#podriamos hacer una tabla con los 10 paises que mas poblacion tienen y mostrar el número de suicidios
+cor.test(datosMale$suicides_no, datosMale$population)
 ```
-Se puede ver que se trata de países con poblaciones bastante altas en general. Como última comprabación, vamos ver como varía la media de la población en el subconjunto de outliers con respecto a la muestra total:
+Observando el p-valor de la correlación de Pearson entre población y número de suicidios para la muestra de mujeres y de hombres, comprobamos como exsiste relación lineal directa para ambas variables. 
 
-```{r print3, echo=FALSE}
-sprintf('La población media en los outliers es %.2f, mientras que la muestra total es tan solo de %.2f.', mean(female_outliers$population),mean(datosFemale$population))
-```
-Algo similar sucede si realizamos este mismo análisis sobre la muestra de hombres. Con este sencillo análisis se ha podido comprobar que la aparición de valores tan dispares en la muestra se debe a la diferencia en cuanto a población entre los países del conjunto. Por ello, se ha optado por realizar nuestro análisis sobre el número de suicidios por cada 100.000 habitantes en lugar de hacerlo directamente sobre el número de suicidios como se había comentado previamente.
+Por este motivo, se ha optado por realizar nuestro análisis sobre el número de suicidios cada 100.000 habitantes.
 
-A continuación se muestran ciertos estadísticos calculados sobre ambas muestras para el número de suicidios por cada 100.000 habitantes:
 ```{r muestreo2, echo=FALSE}
 print(summary(datosFemale$suicides_100k_pop))
 print(summary(datosMale$suicides_100k_pop))
@@ -115,16 +114,12 @@ outline = F
 )
 
 ```
-### Hipótesis
 
-Después de la división en subpoblaciones, planteamos la siguiente hipótesis de acuerdo a los estudios.
+### Estimación puntual e intervalos de confianza para la media
 
-H ~0~ = $\mu$ ~hombres~ >= $\mu$ ~mujeres~
-H ~1~ = $\mu$ ~hombres~ < $\mu$ ~mujeres~
+Suponemos la distribución de ambas muestras normales según el teorema central del límite.
 
-### Estimación puntual e intervalos de confianza
-
-```{r estimaciónMediaMujeres}
+```{r intervaloConfianzaMujeres}
 
 #IC de la media dada con varianza poblacional conocida y confianza de 0.9
 conf = 0.9
@@ -135,13 +130,11 @@ desvF=sqrt(var(pobFemale$suicides_100k_pop))
 ci=mediaF-qnorm(1 - alpha/2)*desvF/sqrt(dim(datosFemale)[1])
 cs=mediaF+qnorm(1 - alpha/2)*desvF/sqrt(dim(datosFemale)[1])
 ```
-```{r print4}
+```{r print3, echo=FALSE}
 sprintf('El intervalo de confianza para la media de suicidios por cada 100 mil habitantes en mujeres con $\alpha$ = 0.1 es: (%f,%f)', ci, cs)
-
-
 #Revisar escribir alpha ahí dentro
 ```
-```{r estimaciónMediaHombres}
+```{r intervaloConfianzaHombres}
 
 #IC de la media con varianza poblacional conocida y confianza de 0.9
 mediaM=mean(datosMale$suicides_100k_pop)
@@ -151,11 +144,12 @@ desvM=sqrt(var(pobMale$suicides_100k_pop))
 ci=mediaM-qnorm(1 - alpha/2)*desvM/sqrt(dim(datosMale)[1])
 cs=mediaM+qnorm(1 - alpha/2)*desvM/sqrt(dim(datosMale)[1])
 ```
-```{r print5}
+```{r print4, echo=FALSE}
 sprintf('El intervalo de confianza para la media de suicidios por cada 100 mil habitantes en hombres con $\alpha$ = 0.1 es: (%f,%f)', ci, cs)
 
 #Revisar escribir alpha ahí dentro
 ```
+
 ## Intervalo de confianza para la comparación medias
 
 Se va a proporcionar un intervalo de confianza para la diferencia de medias en cuanto a número de suicidios por cada 100.000 habitantes entre mujeres y hombres. El parámetro que se estima sería $\theta$ = $\mu_{hombres}$ - $\mu_{mujeres}$.
@@ -174,8 +168,8 @@ ci=((meanM-meanF)-qnorm(1 - alpha/2)*sqrt(varM/nM+varF/nF))
 cs=((meanM-meanF)+qnorm(1 - alpha/2)*sqrt(varM/nM+varF/nF))
 
 ```
-```{r print5}
-sprintf('El intervalo de confianza para la diferencia en la media de suicidios por cada 100 mil habitantes entre hombres y mujeres con $\alpha$ = 0.1 es: (%f,%f)', ci, cs)
+```{r print5, echo=FALSE}
+sprintf('El intervalo de confianza para la diferencia en la media de suicidios por cada 100 mil habitantes entre hombres y mujeres con $\\alpha = 0.1 es: (%f,%f)', ci, cs)
 
 #Revisar escribir alpha ahí dentro
 ```
@@ -184,10 +178,16 @@ sprintf('El intervalo de confianza para la diferencia en la media de suicidios p
 
 ### Contraste de hipótesis para la comparación de las muestras
 
+H ~0~ = $\mu$ ~hombres~ >= $\mu$ ~mujeres~
+
+H ~1~ = $\mu$ ~hombres~ < $\mu$ ~mujeres~
+
 ```{r tstudent}
-t.test(datosFemale$suicides_no, datosMale$suicides_no, alternative = 'less', conf.level = 0.90)
+t.test(datosFemale$suicides_100k_pop, datosMale$suicides_100k_pop, alternative = 'less', conf.level = 0.90)
 
 ```
+
+Según la salida del test de Welch, el p-valor es menor que $\alpha$ por lo que podemos rechazar la hipótesis nula y afirmamos que sí exsiten diferencias significativas entre la media de suicidios de mujeres y la de hombres. Además, atendiendo a la estimación de las medias de cada muestra podemos concluir que los hombres se suicidan más que las mujeres. 
 
 ### Anexo
 ```{r tabla1, echo=FALSE}
