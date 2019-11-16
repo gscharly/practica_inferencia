@@ -62,17 +62,29 @@ malePerc <- (length(pobMale$sex))/(length(suicides$sex))*100
 sprintf('De la población total el %i %% son mujeres y el otro %i %% son hombres. Cada una de las subpoblaciones tienen %i sujetos.', femalePerc, malePerc, length(pobMale$sex))
 ```
 
-Ahora tomaremos una muestra de 5000 sujetos para cada una de las subpoblaciones. 
+A continuación se va a realizar el muestreo de ambas subpoblaciones. Se va a llevar a cabo un muestreo estratificado. Para elegir el tamaño muestral de cada estrato (afijación de la muestra), vamos a tener en cuenta que se van a realizar estimaciones sobre la media del número de suicidios en mujeres y hombres. Además se sabe que las subpoblaciones están compuestas por 13.910 observaciones cada una.
 
 ```{r muestreo}
 set.seed(1)
-datosFemale <- pobFemale[sample(nrow(pobFemale),5000),]
-datosMale <- pobMale[sample(nrow(pobMale),5000),]
+N <- 13910
+err <- 0.05
+conf <- 0.9
+alpha <- 1 - conf
+varM <- var(pobMale$suicides_no)
+varF <- var(pobFemale$suicides_no)
+nM <- (N*varM*(qnorm(1 - alpha/2))^2)/((err^2)*(N-1) + (qnorm(1 - alpha/2)^2)*varM)
+nF <- (N*varF*(qnorm(1 - alpha/2))^2)/((err^2)*(N-1) + (qnorm(1 - alpha/2)^2)*varF)
+
+datosFemale <- pobFemale[sample(nrow(pobFemale),nF),]
+datosMale <- pobMale[sample(nrow(pobMale),nM),]
 
 print(summary(datosFemale$suicides_no))
 print(summary(datosMale$suicides_no))
+
 ```
-Vemos que el valor de la mediana está bastante alejado del valor de la media para ambas muestras, lo que nos indica que aparecen datos de suicidios muy extremos (outliers) que afectan bastante a dicho valor. Esto podría deberse a factores como la existencia en el dataset de países cuya población es muy superior a la de otros también presentes. A continuación se va a comprobar este hecho de manera sencilla filtrando la muestra (correspondiente a las mujeres) para quedarnos con los outliers.
+
+
+Se puede observar que el valor de la mediana está bastante alejado del valor de la media para ambas muestras, lo que nos indica que aparecen datos de suicidios muy extremos (outliers) que afectan bastante a dicho valor. Esto podría deberse a factores como la existencia en el dataset de países cuya población es muy superior a la de otros también presentes. A continuación se va a comprobar este hecho de manera sencilla filtrando la muestra (correspondiente a las mujeres) para quedarnos con los outliers.
 
 ```{r suicideoutliers}
 female_quantiles = quantile(datosFemale$suicides_no,probs = c(0.25,0.75))
@@ -80,7 +92,7 @@ outlier_treshold = as.numeric(female_quantiles[2]) + 1.5*(as.numeric(female_quan
 female_outliers = datosFemale[datosFemale$suicides_no > outlier_treshold,]
 ```
 ```{r print2, echo=FALSE}
-sprintf('El subconjunto de outliers está compuesto de %i elementos, representando el %.3f%% de la muestra total.', nrow(female_outliers),dim(female_outliers)[1]/5000)
+sprintf('El subconjunto de outliers está compuesto de %i elementos, representando el %.3f%% de la muestra total.', nrow(female_outliers),dim(female_outliers)[1]/nF)
 ```
 A continuación se muestra una tabla con los 10 países que aparecen en más ocasiones dentro del conjunto de outliers de la muestra, junto al número de veces que aparecen:
 
@@ -94,8 +106,26 @@ sprintf('La población media en los outliers es %.2f, mientras que la muestra to
 ```
 Algo similar sucede si realizamos este mismo análisis sobre la muestra de hombres. Con este sencillo análisis se ha podido comprobar que la aparición de valores tan dispares en la muestra se debe a la diferencia en cuanto a población entre los países del conjunto. Por ello, se ha optado por realizar nuestro análisis sobre el número de suicidios por cada 100.000 habitantes en lugar de hacerlo directamente sobre el número de suicidios como se había comentado previamente.
 
+Como la varianza de la variable de interés presumiblemente será difente, se hace necesario muestrear de nuevo las subpoblaciones:
+
+```{r muestreo2}
+set.seed(1)
+N <- 13910
+err <- 0.05
+conf <- 0.9
+alpha <- 1 - conf
+varM <- var(pobMale$suicides_100k_pop)
+varF <- var(pobFemale$suicides_100k_pop)
+nM <- (N*varM*(qnorm(1 - alpha/2))^2)/((err^2)*(N-1) + (qnorm(1 - alpha/2)^2)*varM)
+nF <- (N*varF*(qnorm(1 - alpha/2))^2)/((err^2)*(N-1) + (qnorm(1 - alpha/2)^2)*varF)
+
+datosFemale <- pobFemale[sample(nrow(pobFemale),nF),]
+datosMale <- pobMale[sample(nrow(pobMale),nM),]
+
+```
+
 A continuación se muestran ciertos estadísticos calculados sobre ambas muestras para el número de suicidios por cada 100.000 habitantes:
-```{r muestreo2, echo=FALSE}
+```{r summarysuicides, echo=FALSE}
 print(summary(datosFemale$suicides_100k_pop))
 print(summary(datosMale$suicides_100k_pop))
 ```
@@ -160,7 +190,7 @@ sprintf('El intervalo de confianza para la media de suicidios por cada 100 mil h
 
 Se va a proporcionar un intervalo de confianza para la diferencia de medias en cuanto a número de suicidios por cada 100.000 habitantes entre mujeres y hombres. El parámetro que se estima sería $\theta$ = $\mu_{hombres}$ - $\mu_{mujeres}$.
 
-```{r estimaciónMediaHombres}
+```{r iccomparacionmedias}
 #IC de la diferencia de medias con varianza diferentes pero conocidas y confianza de 0.9
 
 meanF = mean(datosFemale$suicides_100k_pop)
@@ -174,13 +204,40 @@ ci=((meanM-meanF)-qnorm(1 - alpha/2)*sqrt(varM/nM+varF/nF))
 cs=((meanM-meanF)+qnorm(1 - alpha/2)*sqrt(varM/nM+varF/nF))
 
 ```
-```{r print5}
+```{r print6}
 sprintf('El intervalo de confianza para la diferencia en la media de suicidios por cada 100 mil habitantes entre hombres y mujeres con $\alpha$ = 0.1 es: (%f,%f)', ci, cs)
 
 #Revisar escribir alpha ahí dentro
 ```
+## Contraste de hipótesis para la característica de estudio en una de las muestras
 
+Se realiza un contraste para estudiar si la media de suicidios por cada 100.000 en la muestra de hombres es igual a dicha característica pero en la muestra total (compuesta por hombres y mujeres). En este caso, las hipótesis a contrastar serían las siguientes:
 
+H ~0~ = $\mu$ ~hombres~ = $\mu$ ~mujeres+hombres~
+\newline H ~1~ != $\mu$ ~hombres~ < $\mu$ ~mujeres+hombres~
+
+En este caso se va a suponer la varianza poblacional como conocida, a pesar de que este caso no se suela dar en entornos reales.
+
+```{r contrastecaracterística}
+datosTotales <- rbind(datosFemale,datosMale)
+(est<-abs((mean(datosMale$suicides_100k_pop)-mean(datosTotales$suicides_100k_pop))/sqrt(var(pobMale$suicides_100k_pop)/nM)))
+(rechazo<-(est>=qnorm(1 - alpha/2)))
+```
+
+### Contraste de hipótesis de normalidad para una de las muestras
+
+Se va a analizar si los datos del número de suicidios por cada 100.000 habitantes en la muestra de hombres se ajusta una distribución normal. Para ello se va a hacer uso del test de Kolmogorov-Smirnov. En este test, las hipótesis a contrastar son las siguientes:
+
+H ~0~ = los datos se ajustan a una distribución normal 
+
+\newline H ~1~ = los datos no se ajustan a una distribución normal
+
+```{r testnormalidad}
+ks.test(x = datosMale$suicides_100k_pop,'pnorm',mean(datosMale$suicides_100k_pop),sd(datosMale$suicides_100k_pop))
+
+```
+
+El p-valor obtenido por el test es muy pequeño, por lo que podemos rechazar la hipótesis nula. 
 
 ### Contraste de hipótesis para la comparación de las muestras
 
