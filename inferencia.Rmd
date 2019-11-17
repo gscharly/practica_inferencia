@@ -97,7 +97,13 @@ sprintf('El subconjunto de outliers está compuesto de %i elementos, representan
 A continuación se muestra una tabla con los 10 países que aparecen en más ocasiones dentro del conjunto de outliers de la muestra, junto al número de veces que aparecen:
 
 ```{r paisesoutliers}
-knitr::kable(sort(table(female_outliers$country), decreasing = TRUE)[1:10], caption = 'Tabla 2. Top 10 outliers')
+
+tab <- as.data.frame(sort(table(female_outliers$country), decreasing = TRUE)[1:10])
+names(tab)[1]<-"Country"
+print(tab)
+
+            
+knitr::kable(tab, caption = 'Tabla 2. Top 10 outliers')
 ```
 Se puede ver que se trata de países con poblaciones bastante altas en general. Como última comprabación, vamos ver como varía la media de la población en el subconjunto de outliers con respecto a la muestra total:
 
