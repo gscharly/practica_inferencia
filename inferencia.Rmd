@@ -287,7 +287,7 @@ knitr::kable(maleTable[, c('Menos de 0.98',  'Entre 0.98 y 6.52', 'Entre 6.52 y 
 chisq.test(maleTable)
 ```
 
-Atendiendo al p-valor de la salida de la prueba de chi cuadrado, se rechaza la hipótesis de independencia con lo que puede afirmarse que, tanto en hombres como en mujeres, existe relación entre las dos variables analizadas. Es importante observar que hay clases en las que hay muy pocos datos (como por ejemplo en maleTable, no hay datos para el rango de edades 5-14 años y más de 17.78 suicidios por cada 100k habitantes). Esto unido a que para la variable de suicidios solo hay 4 clases presentes, puede hacer que el test pierda precisión.
+Atendiendo al p-valor de la salida de la prueba de chi cuadrado, se rechaza la hipótesis de independencia con lo que puede afirmarse que, tanto en hombres como en mujeres, existe relación entre las dos variables analizadas.
 
 ### Pregunta 6. Contraste de hipótesis para la característica de estudio en una de las muestras
 
