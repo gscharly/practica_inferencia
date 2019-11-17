@@ -27,7 +27,7 @@ El conjunto de datos seleccionado contiene información acerca del número de su
 ```{r data}
 dataset <- read.csv(file="suicides.csv", header=TRUE, sep=",")
 #seleccionamos solo aquellas columnas que tienen interés para el análisis
-columnas_deseadas <- c('ï..country', 'year', 'sex', 'age', 'suicides_no', 'population', 'suicides.100k.pop', 'gdp_for_year....', 'gdp_per_capita....')
+columnas_deseadas <- c('country', 'year', 'sex', 'age', 'suicides_no', 'population', 'suicides.100k.pop', 'gdp_for_year....', 'gdp_per_capita....')
 suicides <- dataset[columnas_deseadas]
 #renombramos las columnas para facilitar la comprensión
 names(suicides)[1:9] <- c('country', 'year', 'sex', 'age', 'suicides_no', 'population', 'suicides_100k_pop', 'gdp_for_year ($)', 'gdp_per_capita ($)')
@@ -63,12 +63,13 @@ sprintf('De la población total el %i %% son mujeres y el otro %i %% son hombres
 ```
 
 A continuación se va a realizar el muestreo de ambas subpoblaciones. Dado que en la población hay la misma proporción de hombres y mujeres el tipo de muestreo empleado es estratificado.
-Para elegir el tamaño muestral de cada estrato (afijación de la muestra), vamos a tener en cuenta que se van a realizar estimaciones sobre la media del número de suicidios en mujeres y hombres y que las subpoblaciones están compuestas por 13.910 observaciones cada una.
+Para elegir el tamaño muestral de cada estrato (afijación de la muestra), vamos a tener en cuenta que se van a realizar estimaciones sobre la media del número de suicidios en mujeres y hombres y que las subpoblaciones están compuestas por 13.910 observaciones cada una. Para elegir el tamaño muestral, tenemos en cuenta que la característica a estudiar será la media de la tasa de suicidios, considerando un error del 10% y una confianza del 90%.
 
 ```{r muestreo}
 set.seed(1)
-N <- 13910
-err <- 0.05
+# El número de registros es igual tanto para hombres como para mujeres
+N <- nrow(pobFemale)
+err <- 0.1
 conf <- 0.9
 alpha <- 1 - conf
 varM <- var(pobMale$suicides_no)
@@ -83,7 +84,7 @@ print(summary(datosMale$suicides_no))
 
 
 Se puede observar que el valor de la mediana está bastante alejado del valor de la media para ambas muestras, lo que nos indica que aparecen datos de suicidios muy extremos (outliers) que afectan bastante a dicho valor. 
-A cntinuación se muestra la proporción de valores outliers en la muestra de mujeres.
+A continuación se muestra la proporción de valores outliers en la muestra de mujeres.
 
 ```{r suicideoutliers}
 female_quantiles = quantile(datosFemale$suicides_no,probs = c(0.25,0.75))
@@ -113,14 +114,14 @@ knitr::kable(sort(table(female_outliers$country), decreasing = TRUE)[1:10], capt
 
 Se puede ver que se trata de países con poblaciones bastante altas en general.
 
-Debido a lo obserbado respecto a la aparición de outliers en las muestas, se ha optado por realizar nuestros análisis sobre el número de suicidios por cada 100.000 habitantes.
+Debido a lo observado respecto a la aparición de outliers en las muestras, se ha optado por realizar nuestros análisis sobre el número de suicidios por cada 100.000 habitantes.
 
-Como la varianza de la variable de interés presumiblemente será difente, se hace necesario muestrear de nuevo las subpoblaciones:
+Como la varianza de la variable de interés presumiblemente será diferente, se hace necesario muestrear de nuevo las subpoblaciones. Tomamos los mismos valores de confianza y error. Aquí hay que tener en cuenta que la varianza de los datos de los hombres es mucho mayor en la característica que vamos a estudiar, por lo que el tamaño muestral será más grande que el de las mujeres.
 
 ```{r muestreo2}
 set.seed(1)
-N <- 13910
-err <- 0.05
+N <- nrow(pobFemale)
+err <- 0.1
 conf <- 0.9
 alpha <- 1 - conf
 varM <- var(pobMale$suicides_100k_pop)
@@ -156,9 +157,9 @@ outline = F
 
 
 
-### Pregunta 2. Intervalo de hipótesis para la característica en una de las muestras
+### Pregunta 2. Intervalo de confianza para la característica en una de las muestras
 
-Se ha calculado el intervalo para la media de suicidios por cada 100.000 habitantes en la muestra de hombres dada la varianza poblacional conocida y con una confianza de 0.9.
+Se ha calculado el intervalo para la media de suicidios por cada 100.000 habitantes en la muestra de hombres dada la varianza poblacional conocida y con una confianza de 0.9. Como estimador de la media, se utiliza la media muestral, suponiendo que extraemos los datos de una población con distribución normal, media desconocida y varianza conocida.
 
 ```{r estimaciónMediaMujeres}
 conf = 0.9
@@ -169,11 +170,12 @@ ci=mediaF-qnorm(1 - alpha/2)*desvF/sqrt(dim(datosFemale)[1])
 cs=mediaF+qnorm(1 - alpha/2)*desvF/sqrt(dim(datosFemale)[1])
 ```
 ```{r print4}
-sprintf('El intervalo de confianza para la media de suicidios por cada 100 mil habitantes en mujeres con alpha = 0.1 es: (%f,%f)', ci, cs)
+sprintf('La media muestral de suicidios por cada 100 mil habitantes en mujeres es %.3f', mediaF)
+sprintf('El intervalo de confianza para la media de suicidios por cada 100 mil habitantes en mujeres con alpha = 0.1 es: (%.3f,%.3f)', ci, cs)
 ```
 
 
-## Pregunta 3. Intervalo de confianza para la comparación de dicha característica
+### Pregunta 3. Intervalo de confianza para la comparación de dicha característica
 
 Se va a proporcionar un intervalo de confianza para la diferencia de medias en cuanto a número de suicidios por cada 100.000 habitantes entre mujeres y hombres. El parámetro que se estima sería $\theta$ = $\mu_{hombres}$ - $\mu_{mujeres}$.
 
@@ -192,7 +194,22 @@ cs=((meanM-meanF)+qnorm(1 - alpha/2)*sqrt(varM/nM+varF/nF))
 sprintf('El intervalo de confianza para la diferencia en la media de suicidios por cada 100 mil habitantes entre hombres y mujeres con alpha = 0.1 es: (%f,%f)', ci, cs)
 ```
 
-### Pregunta 4. Contraste de hipótesis para la independencia de las muestras
+### Pregunta 4. Contraste de hipótesis para la comparación de las muestras
+
+Se plantea comprobar si la media del número de suicidios cada 100.000 habitantes en hombres es mayor que la de mujeres. 
+
+H ~0~ = $\mu$ ~hombres~ <= $\mu$ ~mujeres~
+
+\newline H ~1~ = $\mu$ ~hombres~ > $\mu$ ~mujeres~
+
+```{r tstudent}
+t.test(datosMale$suicides_100k_pop, datosFemale$suicides_100k_pop, alternative = 'greater', conf.level = 0.90)
+
+```
+
+Según la salida del test de Welch, el p-valor es menor que $\alpha$ por lo que podemos rechazar la hipótesis nula y afirmar que sí existen diferencias significativas entre la media de suicidios de mujeres y la de hombres. Además, atendiendo a la estimación de las medias de cada muestra podemos concluir que los hombres se suicidan más que las mujeres.
+
+### Pregunta 5. Contraste de hipótesis para la independencia de las muestras
 
 Se pretende comprobar si para el número de suicidios cada 100.000 habitantes, las variables de PIB per cápita y sexo son dependientes.
 
@@ -203,7 +220,7 @@ datosTotales <- rbind(datosFemale, datosMale)
 ks.test(x = datosTotales$`gdp_per_capita ($)`, 'pnorm', mean(datosTotales$`gdp_per_capita ($)`), sd(datosTotales$`gdp_per_capita ($)`))
 ```
 
-Este tipo de contraste se realiza sobre variables categóricas. De esta forma, lo primero que realizamos es la categorización de la variable PIB per cápita en base a los quantiles de manera que obtenemos cuatro categorías. Se ha elegido esta manera de categorización porque obtendremos categorías con las misma proporción de datos dada la distribución normal de los mismos.
+Este tipo de contraste se realiza sobre variables categóricas. De esta forma, lo primero que realizamos es la categorización de la variable PIB per cápita en base a los cuartiles de manera que obtenemos cuatro categorías. Se ha elegido esta manera de categorización porque obtendremos categorías con aproximadamente la misma cantidad de muestras.
 
 Las hipótesis para el contraste serían las siguientes:
 
@@ -238,7 +255,7 @@ chisq.test(datosTotales$sex, datosTotales$gdp_category)
 
 A pesar de lo que indicaba la bibliografía, atendiendo al p-valor de la salida de la prueba de chi cuadrado, en nuestro caso no podemos rechazar la independencia del PIB per cápita y la variable sexo. Cabe la posibilidad que una agrupación diferente a la hora de categorizar, cambie el resultado.
 
-## Pregunta 5. Contraste de hipótesis para la característica de estudio en una de las muestras
+### Pregunta 6. Contraste de hipótesis para la característica de estudio en una de las muestras
 
 Se realiza un contraste para estudiar si la media de suicidios por cada 100.000 habitantes en la muestra de hombres es igual a dicha característica pero en la muestra total (compuesta por hombres y mujeres). En este caso, las hipótesis serían las siguientes:
 
@@ -250,8 +267,9 @@ datosTotales <- rbind(datosFemale,datosMale)
 (est<-abs((mean(datosMale$suicides_100k_pop)-mean(datosTotales$suicides_100k_pop))/sqrt(var(pobMale$suicides_100k_pop)/nM)))
 (rechazo<-(est>=qnorm(1 - alpha/2)))
 ```
+Podemos rechazar la hipótesis nula, es decir, la media de la tasa de suicidios por cada 100.000 habitantes en la muestra no es igual a la característica en la población total.
 
-### Pregunta 6. Contraste de hipótesis de normalidad para una de las muestras
+### Pregunta 7. Contraste de hipótesis de normalidad para una de las muestras
 
 Se va a analizar si los datos del número de suicidios por cada 100.000 habitantes en la muestra de hombres se ajusta una distribución normal. Para ello se va a hacer uso del test de Kolmogorov-Smirnov. En este test, las hipótesis a contrastar son las siguientes:
 
@@ -263,7 +281,7 @@ H ~0~ = $F(x) = F ~Normal~ (x)$ los datos se ajustan a una distribución normal
 ks.test(x = datosMale$suicides_100k_pop,'pnorm',mean(datosMale$suicides_100k_pop),sd(datosMale$suicides_100k_pop))
 ```
 
-El p-valor obtenido es menor para cualquier $\alpha$ de los habituales (0.1, 0.05 o 0.025) por lo que podemos rechazar la hipótesis nula y afrimar que los datos no siguen una distribución normal. Esto mismo puede verse de manera gráfica en el siguiente histograma y en gráfico Quantil-Quantil.
+El p-valor obtenido es menor para cualquier $\alpha$ de los habituales (0.1, 0.05 o 0.025) por lo que podemos rechazar la hipótesis nula y afirmar que los datos no siguen una distribución normal. Esto mismo puede verse de manera gráfica en el siguiente histograma y en gráfico Quantil-Quantil.
 
 A pesar de esto, según el Teorema Central del Límite asumimos su normalidad para los contrastes que realizamos.
 
@@ -288,21 +306,6 @@ qqnorm(datosMale$suicides_100k_pop, pch = 20, col = alpha("#b5525c", 0.5),
 grid()
 qqline(datosMale$suicides_100k_pop, col = '#5f6769', lwd = 2)
 ```
-
-### Pregunta 7. Contraste de hipótesis para la comparación de las muestras
-
-Se plantea comprobar si la media del número de suicidios cada 100.000 habitantes en hombres es mayor que la de mujeres. 
-
-H ~0~ = $\mu$ ~hombres~ >= $\mu$ ~mujeres~
-
-\newline H ~1~ = $\mu$ ~hombres~ < $\mu$ ~mujeres~
-
-```{r tstudent}
-t.test(datosMale$suicides_100k_pop, datosFemale$suicides_100k_pop, alternative = 'greater', conf.level = 0.90)
-
-```
-
-Según la salida del test de Welch, el p-valor es menor que $\alpha$ por lo que podemos rechazar la hipótesis nula y afirmar que sí exsiten diferencias significativas entre la media de suicidios de mujeres y la de hombres. Además, atendiendo a la estimación de las medias de cada muestra podemos concluir que los hombres se suicidan más que las mujeres.
 
 
 ### Anexo
