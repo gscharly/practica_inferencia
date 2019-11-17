@@ -8,6 +8,7 @@ date: "18 de noviembre de 2019"
 output: 
   html_document: default
 ---
+***
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -18,16 +19,17 @@ library(plyr)
 library(knitr)
 library(dplyr)
 library(ggplot2)
+library(nortest)
 ```
 
 ### Descripción del conjunto de datos
 
-El conjunto de datos seleccionado contiene información acerca del número de suicidios según sexo y edad (dividido en seis grupos de edad) ocurridos en 101 países (ver tabla 1 en Anexo) desde 1985 hasta 2016. Además de esto, para cada año aparece el PIB del país y el PIB per cápita. Este conjunto de datos también cuenta con el índice de desarrollo humano. 
+El conjunto de datos seleccionado contiene información acerca del número de suicidios según sexo y edad (dividido en seis grupos de edad) ocurridos en 101 países (ver tabla 3 en Anexo) desde 1985 hasta 2016. Además de esto, para cada año aparece el PIB del país y el PIB per cápita. 
 
-```{r data}
+```{r data, echo=FALSE}
 dataset <- read.csv(file="suicides.csv", header=TRUE, sep=",")
 #seleccionamos solo aquellas columnas que tienen interés para el análisis
-columnas_deseadas <- c('country', 'year', 'sex', 'age', 'suicides_no', 'population', 'suicides.100k.pop', 'gdp_for_year....', 'gdp_per_capita....')
+columnas_deseadas <- c('ï..country', 'year', 'sex', 'age', 'suicides_no', 'population', 'suicides.100k.pop', 'gdp_for_year....', 'gdp_per_capita....')
 suicides <- dataset[columnas_deseadas]
 #renombramos las columnas para facilitar la comprensión
 names(suicides)[1:9] <- c('country', 'year', 'sex', 'age', 'suicides_no', 'population', 'suicides_100k_pop', 'gdp_for_year ($)', 'gdp_per_capita ($)')
@@ -36,13 +38,13 @@ knitr::kable(head(suicides, 10), caption = 'Tabla 1. Primeras 10 filas del conju
 
 ### Justificación de la selección de las características de interés
 
-Según la Organización Mundial de la Salud (OMS, 2019) cerca de 800.000 personas se suicidad al año (OMS, 2019). Dentro de este fenómeno pueden encontrarse factores de riesgo de caracter individual y social. 
+Según la Organización Mundial de la Salud (OMS, 2019) cerca de 800.000 personas se suicidan al año (OMS, 2019). Dentro de este fenómeno pueden encontrarse factores de riesgo de caracter individual y social. 
 
-En este sentido, los estudios muestran cómo el nivel socioeconómico y el género forman parte de dichos factores. 
+En este sentido, los estudios muestran cómo el nivel socioeconómico y el sexo forman parte de dichos factores. 
 
 La tasa de ideación suicida y los intentos de suicidio son mayores en mujeres. A pesar de esto, la frecuencia de suicidio entre los hombres es mayor pudiendo deberse al uso de mecanismos más letales (Mejía, Sanhuenza y González, 2011).
 
-Por otro lado, el nivel económico parece tomar papel en esta diferencia entre ambos géneros. En los países de altos ingresos, se suicidan tres veces más hombres que mujeres, pero en los de ingresos bajos y medianos la razón, hombre: mujer es mucho menor, de 1,5 hombres por cada mujer (Corona, Hernández y García, 2016). 
+Por otro lado, el nivel económico parece tomar papel en esta diferencia entre ambos sexos. En los países de altos ingresos, se suicidan tres veces más hombres que mujeres, pero en los de ingresos bajos y medianos la razón, hombre:mujer es mucho menor, de 1,5 hombres por cada mujer (Corona, Hernández y García, 2016). 
 
 
 ### Pregunta 1. Muestreo del conjunto de datos
@@ -63,7 +65,8 @@ sprintf('De la población total el %i %% son mujeres y el otro %i %% son hombres
 ```
 
 A continuación se va a realizar el muestreo de ambas subpoblaciones. Dado que en la población hay la misma proporción de hombres y mujeres el tipo de muestreo empleado es estratificado.
-Para elegir el tamaño muestral de cada estrato (afijación de la muestra), vamos a tener en cuenta que se van a realizar estimaciones sobre la media del número de suicidios en mujeres y hombres y que las subpoblaciones están compuestas por 13.910 observaciones cada una. Para elegir el tamaño muestral, tenemos en cuenta que la característica a estudiar será la media de la tasa de suicidios, considerando un error del 10% y una confianza del 90%.
+
+Para elegir el tamaño muestral de cada estrato (afijación de la muestra), vamos a tener en cuenta que se van a realizar estimaciones sobre la media del número de suicidios en mujeres y hombres y que las subpoblaciones están compuestas por 13.910 observaciones cada una. Además, tenemos en cuenta que la característica a estudiar será la media de la tasa de suicidios, considerando un error del 10% y una confianza del 90%.
 
 ```{r muestreo}
 set.seed(1)
@@ -84,6 +87,7 @@ print(summary(datosMale$suicides_no))
 
 
 Se puede observar que el valor de la mediana está bastante alejado del valor de la media para ambas muestras, lo que nos indica que aparecen datos de suicidios muy extremos (outliers) que afectan bastante a dicho valor. 
+
 A continuación se muestra la proporción de valores outliers en la muestra de mujeres.
 
 ```{r suicideoutliers}
@@ -95,26 +99,25 @@ female_outliers = datosFemale[datosFemale$suicides_no > outlier_treshold,]
 sprintf('El subconjunto de outliers está compuesto de %i elementos, representando el %.3f%% de la muestra total.', nrow(female_outliers),dim(female_outliers)[1]/nF)
 ```
 
-Estos valores extremos podría deberse a factores como la existencia en el dataset de países cuya población es muy superior a la de otros también presentes. 
-Una manera de testar dicha posible explicación, se realiza la correlación de Pearson para el valor poblacional y el número de suicidios.
+Estos valores extremos podría deberse a factores como la existencia en el dataset de países cuya población es muy superior a la de otros también presentes.
+
+Una manera de testar dicha posible explicación es realizar la correlación de Pearson para el valor poblacional y el número de suicidios.
 
 ```{r Pearson}
 cor.test(datosFemale$suicides_no, datosFemale$population)
-#podriamos hacer una tabla con los 10 paises que mas poblacion tienen y mostrar el número de suicidios
 cor.test(datosMale$suicides_no, datosMale$population)
 ```
 
 Observando el p-valor de la correlación de Pearson entre población y número de suicidios para la muestra de mujeres y de hombres, comprobamos como exsiste relación lineal directa para ambas variables.
 
-A continuación se muestra una tabla con los 10 países que aparecen en más ocasiones dentro del conjunto de outliers de la muestra de mujeres, junto al número de veces que aparecen:
+Por otro lado, en la siguiente tabla se muestran los 10 países que aparecen en más ocasiones dentro del conjunto de outliers de la muestra de mujeres, junto al número de veces que aparecen. Se puede ver que se trata de países con poblaciones bastante altas en general.
 
-```{r paisesoutliers}
-knitr::kable(sort(table(female_outliers$country), decreasing = TRUE)[1:10], caption = 'Tabla 2. Top 10 con mayor número de outliers')
+```{r paisesoutliers, echo=FALSE}
+knitr::kable(sort(table(female_outliers$country), decreasing = TRUE)[1:10], col.names = c('Country', 'Frequency'), caption = 'Tabla 2. Top 10 con mayor número de outliers')
 ```
 
-Se puede ver que se trata de países con poblaciones bastante altas en general.
 
-Debido a lo observado respecto a la aparición de outliers en las muestras, se ha optado por realizar nuestros análisis sobre el número de suicidios por cada 100.000 habitantes.
+Debido a lo observado respecto a la aparición de outliers en las muestras, hemos optado por realizar nuestros análisis sobre el número de suicidios por cada 100.000 habitantes.
 
 Como la varianza de la variable de interés presumiblemente será diferente, se hace necesario muestrear de nuevo las subpoblaciones. Tomamos los mismos valores de confianza y error. Aquí hay que tener en cuenta que la varianza de los datos de los hombres es mucho mayor en la característica que vamos a estudiar, por lo que el tamaño muestral será más grande que el de las mujeres.
 
@@ -133,12 +136,13 @@ datosMale <- pobMale[sample(nrow(pobMale),nM),]
 ```
 
 A continuación se muestran ciertos estadísticos calculados sobre ambas muestras para el número de suicidios por cada 100.000 habitantes:
+
 ```{r summarysuicides, echo=FALSE}
 print(summary(datosFemale$suicides_100k_pop))
 print(summary(datosMale$suicides_100k_pop))
 ```
-Podemos ver que a pesar de que siguen apareciendo outliers, los datos se distribuyen de una manera mucho más uniforme. Esto se ve también reflejado en el siguiente diagrama de cajas:
 
+Podemos ver que a pesar de que siguen apareciendo outliers, los datos se distribuyen de una manera mucho más uniforme. Esto se ve también reflejado en el siguiente diagrama de cajas:
 
 ```{r boxplot2}
 boxplot(datosFemale$suicides_100k_pop, datosMale$suicides_100k_pop,
@@ -159,7 +163,7 @@ outline = F
 
 ### Pregunta 2. Intervalo de confianza para la característica en una de las muestras
 
-Se ha calculado el intervalo para la media de suicidios por cada 100.000 habitantes en la muestra de hombres dada la varianza poblacional conocida y con una confianza de 0.9. Como estimador de la media, se utiliza la media muestral, suponiendo que extraemos los datos de una población con distribución normal, media desconocida y varianza conocida.
+Se ha calculado el intervalo para la media de suicidios por cada 100.000 habitantes en la muestra de mujeres con una confianza de 0.9. Como estimador de la media, se utiliza la media muestral, suponiendo que extraemos los datos de una población con distribución normal, media desconocida y varianza conocida.
 
 ```{r estimaciónMediaMujeres}
 conf = 0.9
@@ -169,7 +173,7 @@ desvF=sqrt(var(pobFemale$suicides_100k_pop))
 ci=mediaF-qnorm(1 - alpha/2)*desvF/sqrt(dim(datosFemale)[1])
 cs=mediaF+qnorm(1 - alpha/2)*desvF/sqrt(dim(datosFemale)[1])
 ```
-```{r print4}
+```{r print3, echo=FALSE}
 sprintf('La media muestral de suicidios por cada 100 mil habitantes en mujeres es %.3f', mediaF)
 sprintf('El intervalo de confianza para la media de suicidios por cada 100 mil habitantes en mujeres con alpha = 0.1 es: (%.3f,%.3f)', ci, cs)
 ```
@@ -190,7 +194,7 @@ nM = dim(datosMale)[1]
 ci=((meanM-meanF)-qnorm(1 - alpha/2)*sqrt(varM/nM+varF/nF))
 cs=((meanM-meanF)+qnorm(1 - alpha/2)*sqrt(varM/nM+varF/nF))
 ```
-```{r print6}
+```{r print4, echo=FALSE}
 sprintf('El intervalo de confianza para la diferencia en la media de suicidios por cada 100 mil habitantes entre hombres y mujeres con alpha = 0.1 es: (%f,%f)', ci, cs)
 ```
 
@@ -207,20 +211,18 @@ t.test(datosMale$suicides_100k_pop, datosFemale$suicides_100k_pop, alternative =
 
 ```
 
-Según la salida del test de Welch, el p-valor es menor que $\alpha$ por lo que podemos rechazar la hipótesis nula y afirmar que sí existen diferencias significativas entre la media de suicidios de mujeres y la de hombres. Además, atendiendo a la estimación de las medias de cada muestra podemos concluir que los hombres se suicidan más que las mujeres.
+Según la salida del test de Welch, el p-valor es menor que $\alpha$ por lo que podemos rechazar la hipótesis nula y afirmar que sí existen diferencias significativas entre la media de suicidios de mujeres y la de hombres siendo mayor la de los hombres.
 
 ### Pregunta 5. Contraste de hipótesis para la independencia de las muestras
 
-Se pretende comprobar si para el número de suicidios cada 100.000 habitantes, las variables de PIB per cápita y sexo son dependientes.
+Se pretende comprobar si hay relación entre la variable de suicidios por cada 100.000 habitantes y la variable edad tomando hombres y mujeres de manera separada.
 
 ```{r muestraTotal}
 #Unimos los dos dataframes de la muestra de mujeres y hobres en uno
 datosTotales <- rbind(datosFemale, datosMale)
-#Se comprueba si la distribución es normal para el PIB en la muestra total 
-ks.test(x = datosTotales$`gdp_per_capita ($)`, 'pnorm', mean(datosTotales$`gdp_per_capita ($)`), sd(datosTotales$`gdp_per_capita ($)`))
 ```
 
-Este tipo de contraste se realiza sobre variables categóricas. De esta forma, lo primero que realizamos es la categorización de la variable PIB per cápita en base a los cuartiles de manera que obtenemos cuatro categorías. Se ha elegido esta manera de categorización porque obtendremos categorías con aproximadamente la misma cantidad de muestras.
+Este tipo de contraste se realiza sobre variables categóricas. De esta forma, lo primero que realizamos es la categorización de la variable correspondiente a los suicidios en base a los cuartiles de manera que obtenemos cuatro categorías.
 
 Las hipótesis para el contraste serían las siguientes:
 
@@ -228,36 +230,69 @@ H ~0~ = las variables son independientes
 
 \newline H ~1~ = las variables son dependientes
 
-```{r independencia}
+```{r independenciaFem}
 #Categorización de PIB-per cápita
-datosTotales$gdp_category <- c(0*(length(datosTotales$`gdp_per_capita ($)`)))
-quantiles <- quantile(datosTotales$`gdp_per_capita ($)`, c(0.0, 0.25, 0.5, 0.75, 1.0))
+datosFemale$suicides_100k_category <- c()
 
-for (i in 1:nrow(datosTotales)){
-  if(datosTotales[i, 'gdp_per_capita ($)']<=3485){
-    datosTotales[i,'gdp_category'] = 1
+quantileFem1 <- quantile(datosFemale$suicides_100k_pop, c(0.25))
+quantileFem2 <- quantile(datosFemale$suicides_100k_pop, c(0.50))
+quantileFem3 <- quantile(datosFemale$suicides_100k_pop, c(0.75))
+
+for (i in 1:nrow(datosFemale)){
+  if(datosFemale[i,'suicides_100k_pop']<= quantileFem1){
+    datosFemale[i,'suicides_100k_category'] = 'Menos del 0.98%'
   }
-  else if (datosTotales[i, 'gdp_per_capita ($)']>3485 && datosTotales[i, 'gdp_per_capita ($)']<=9667){
-    datosTotales[i,'gdp_category'] = 2
+  else if (datosFemale[i,'suicides_100k_pop']> quantileFem1 && 
+           datosFemale[i,'suicides_100k_pop']<= quantileFem2){
+    datosTotales[i,'suicides_100k_category'] = 'Entre el 0.98% y el 6.52%'
   }
-  else if (datosTotales[i, 'gdp_per_capita ($)']>9667 && datosTotales[i, 'gdp_per_capita ($)']<=24943){
-    datosTotales[i,'gdp_category'] = 3
+  else if (datosFemale[i, 'suicides_100k_pop']> quantileFem2 && 
+           datosFemale[i, 'suicides_100k_pop']<= quantileFem3){
+    datosFemale[i,'suicides_100k_category'] = 'Entre el 6.52% y el 17.78%'
   }
   else{
-    datosTotales[i,'gdp_category'] = 4
+    datosFemale[i,'suicides_100k_category'] = 'Más del 17.78%'
   }
 }
-
+knitr::kable(table(datosMale$age, datosMale$suicides_100k_category))
 #Chi-cuadrado
-chisq.test(datosTotales$sex, datosTotales$gdp_category)
-
+chisq.test(datosFemale$age, datosFemale$suicides_100k_category)
 ```
 
-A pesar de lo que indicaba la bibliografía, atendiendo al p-valor de la salida de la prueba de chi cuadrado, en nuestro caso no podemos rechazar la independencia del PIB per cápita y la variable sexo. Cabe la posibilidad que una agrupación diferente a la hora de categorizar, cambie el resultado.
+```{r independenciaMale}
+#Categorización de PIB-per cápita
+datosMale$suicides_100k_category <- c()
+
+quantileMale1 <- quantile(datosMale$suicides_100k_pop, c(0.25))
+quantileMale2 <- quantile(datosMale$suicides_100k_pop, c(0.50))
+quantileMale3 <- quantile(datosMale$suicides_100k_pop, c(0.75))
+
+for (i in 1:nrow(datosMale)){
+  if(datosMale[i,'suicides_100k_pop']<= quantileMale1){
+    datosMale[i,'suicides_100k_category'] = 'Menos del 0.98%'
+  }
+  else if (datosMale[i,'suicides_100k_pop']> quantileMale1 && 
+           datosMale[i,'suicides_100k_pop']<= quantileMale2){
+    datosTotales[i,'suicides_100k_category'] = 'Entre el 0.98% y el 6.52%'
+  }
+  else if (datosMale[i, 'suicides_100k_pop']> quantileMale2 && 
+           datosMale[i, 'suicides_100k_pop']<= quantileMale3){
+    datosMale[i,'suicides_100k_category'] = 'Entre el 6.52% y el 17.78%'
+  }
+  else{
+    datosMale[i,'suicides_100k_category'] = 'Más del 17.78%'
+  }
+}
+knitr::kable(table(datosMale$age, datosMale$suicides_100k_category))
+#Chi-cuadrado
+chisq.test(datosMale$age, datosMale$suicides_100k_category)
+```
+
+Atendiendo al p-valor de la salida de la prueba de chi cuadrado, se rechaza la hipótesis de independencia con lo que puede afirmarse que, tanto en hombres como en mujeres, existe relación entre las dos variables analizadas.
 
 ### Pregunta 6. Contraste de hipótesis para la característica de estudio en una de las muestras
 
-Se realiza un contraste para estudiar si la media de suicidios por cada 100.000 habitantes en la muestra de hombres es igual a dicha característica pero en la muestra total (compuesta por hombres y mujeres). En este caso, las hipótesis serían las siguientes:
+Se realiza un contraste para estudiar si la media de suicidios de hombres por cada 100.000 habitantes es igual a la media de dicha característica tomando hombres y mujeres de manera conjunta. En este caso, las hipótesis serían las siguientes:
 
 H ~0~ = $\mu$ ~hombres~ = $\mu$ ~mujeres+hombres~
 \newline H ~1~ != $\mu$ ~hombres~ < $\mu$ ~mujeres+hombres~
@@ -267,23 +302,25 @@ datosTotales <- rbind(datosFemale,datosMale)
 (est<-abs((mean(datosMale$suicides_100k_pop)-mean(datosTotales$suicides_100k_pop))/sqrt(var(pobMale$suicides_100k_pop)/nM)))
 (rechazo<-(est>=qnorm(1 - alpha/2)))
 ```
-Podemos rechazar la hipótesis nula, es decir, la media de la tasa de suicidios por cada 100.000 habitantes en la muestra no es igual a la característica en la población total.
+
+Podemos rechazar la hipótesis nula, es decir, la media de la tasa de suicidios en hombres por cada 100.000 habitantes no es igual a la característica en la población total.
 
 ### Pregunta 7. Contraste de hipótesis de normalidad para una de las muestras
 
 Se va a analizar si los datos del número de suicidios por cada 100.000 habitantes en la muestra de hombres se ajusta una distribución normal. Para ello se va a hacer uso del test de Kolmogorov-Smirnov. En este test, las hipótesis a contrastar son las siguientes:
 
-H ~0~ = $F(x) = F ~Normal~ (x)$ los datos se ajustan a una distribución normal 
+H ~0~ = F(x) = F ~Normal~ (x)
 
-\newline H ~1~ = $F(x) a\neq F ~Normal~ (x)$los datos no se ajustan a una distribución normal
+\newline H ~1~ = F(x) $\neq$ F ~Normal~ (x)
 
 ```{r testnormalidad}
 ks.test(x = datosMale$suicides_100k_pop,'pnorm',mean(datosMale$suicides_100k_pop),sd(datosMale$suicides_100k_pop))
+lillie.test(x = datosMale$suicides_100k_pop)
 ```
 
-El p-valor obtenido es menor para cualquier $\alpha$ de los habituales (0.1, 0.05 o 0.025) por lo que podemos rechazar la hipótesis nula y afirmar que los datos no siguen una distribución normal. Esto mismo puede verse de manera gráfica en el siguiente histograma y en gráfico Quantil-Quantil.
+El p-valor obtenido es menor para cualquier $\alpha$ de los habituales (0.1, 0.05 o 0.025) por lo que podemos rechazar la hipótesis nula y afirmar que los datos no siguen una distribución normal. Esto mismo puede verse de manera gráfica en el siguiente histograma y en el gráfico Quantil-Quantil.
 
-A pesar de esto, según el Teorema Central del Límite asumimos su normalidad para los contrastes que realizamos.
+A pesar de esto, según el Teorema Central del Límite hemos asumimido su normalidad para los contrastes realizados.
 
 ```{r hist}
 hist(datosMale$suicides_100k_pop, freq = F, 
@@ -307,16 +344,16 @@ grid()
 qqline(datosMale$suicides_100k_pop, col = '#5f6769', lwd = 2)
 ```
 
+### Referencias
+
+* Corona, B., Hernández, M., y García, R. M. (2016). Mortalidad por suicidio, factores de riesgos y protectores. Revista Habanera de Ciencias Médicas, 15(1).
+
+* Mejía, M., Sanhuenza, P., y González, J. (2011). Factores de riesgo y contexto del suicidio. Revista Memoriza, 8, 15-25.
+
+* OMS (2019). Organización Mundial de la Salud. https://www.who.int/es/news-room/fact-sheets/detail/suicide
 
 ### Anexo
 ```{r tabla1, echo=FALSE}
-knitr::kable(unique(suicides$country), caption = 'Tabla 1. Países incluídos en la base de datos')
+knitr::kable(unique(suicides$country), col.names = ('Country'), caption = 'Tabla 3. Países incluídos en la base de datos')
 ```
 
-### Referencias
-
-** Corona, B., Hernández, M., y García, R. M. (2016). Mortalidad por suicidio, factores de riesgos y protectores. Revista Habanera de Ciencias Médicas, 15(1).
-
-** Mejía, M., Sanhuenza, P., y González, J. (2011). Factores de riesgo y contexto del suicidio. Revista Memoriza, 8, 15-25.
-
-** OMS (2019). Organización Mundial de la Salud. https://www.who.int/es/news-room/fact-sheets/detail/suicide
