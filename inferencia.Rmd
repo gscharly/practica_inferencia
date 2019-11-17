@@ -1,7 +1,10 @@
 ---
-title: "Práctica Inferencia"
-author: " "
-date: "9 de noviembre de 2019"
+title: "Trabajo Inferencia"
+author: 
+- name: Paula Santamaría Villaverde
+- name: Manuel Jesús Pertejo Lope
+- name: Carlos Gómez Sánchez
+date: "18 de noviembre de 2019"
 output: 
   html_document: default
 ---
@@ -10,7 +13,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r libraries}
+```{r libraries, echo=FALSE, message=FALSE}
 library(plyr)
 library(knitr)
 library(dplyr)
@@ -135,9 +138,6 @@ print(summary(datosMale$suicides_100k_pop))
 ```
 Podemos ver que a pesar de que siguen apareciendo outliers, los datos se distribuyen de una manera mucho más uniforme. Esto se ve también reflejado en el siguiente diagrama de cajas:
 
-```{r colTrasparent, echo=FALSE}
-mycol <- t_col("pink", perc = 100, name = "lt.pink")
-```
 
 ```{r boxplot2}
 boxplot(datosFemale$suicides_100k_pop, datosMale$suicides_100k_pop,
@@ -148,11 +148,10 @@ border = c('#b5525c','#105e62'),
 lwd = 1.5,
 horizontal = F,
 ylab = 'suicidios por 100k hab.',
-notch = TRUE,
+notch = FALSE,
 outline = F
 )
 
-?boxplot
 ```
 
 
