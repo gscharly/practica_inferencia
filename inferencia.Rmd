@@ -29,7 +29,7 @@ El conjunto de datos seleccionado contiene información acerca del número de su
 ```{r data, echo=FALSE}
 dataset <- read.csv(file="suicides.csv", header=TRUE, sep=",")
 #seleccionamos solo aquellas columnas que tienen interés para el análisis
-columnas_deseadas <- c('ï..country', 'year', 'sex', 'age', 'suicides_no', 'population', 'suicides.100k.pop', 'gdp_for_year....', 'gdp_per_capita....')
+columnas_deseadas <- c('country', 'year', 'sex', 'age', 'suicides_no', 'population', 'suicides.100k.pop', 'gdp_for_year....', 'gdp_per_capita....')
 suicides <- dataset[columnas_deseadas]
 #renombramos las columnas para facilitar la comprensión
 names(suicides)[1:9] <- c('country', 'year', 'sex', 'age', 'suicides_no', 'population', 'suicides_100k_pop', 'gdp_for_year ($)', 'gdp_per_capita ($)')
@@ -217,12 +217,7 @@ Según la salida del test de Welch, el p-valor es menor que $\alpha$ por lo que 
 
 Se pretende comprobar si hay relación entre la variable de suicidios por cada 100.000 habitantes y la variable edad tomando hombres y mujeres de manera separada.
 
-```{r muestraTotal}
-#Unimos los dos dataframes de la muestra de mujeres y hobres en uno
-datosTotales <- rbind(datosFemale, datosMale)
-```
-
-Este tipo de contraste se realiza sobre variables categóricas. De esta forma, lo primero que realizamos es la categorización de la variable correspondiente a los suicidios en base a los cuartiles de manera que obtenemos cuatro categorías.
+Utilizaremos un test de chi cuadrado para contrastar la independencia. Este tipo de contraste se realiza sobre variables categóricas. De esta forma, lo primero que realizamos es la categorización de la variable correspondiente a los suicidios en base a los cuartiles de manera que obtenemos cuatro categorías.
 
 Las hipótesis para el contraste serían las siguientes:
 
@@ -240,23 +235,25 @@ quantileFem3 <- quantile(datosFemale$suicides_100k_pop, c(0.75))
 
 for (i in 1:nrow(datosFemale)){
   if(datosFemale[i,'suicides_100k_pop']<= quantileFem1){
-    datosFemale[i,'suicides_100k_category'] = 'Menos del 0.98%'
+    datosFemale[i,'suicides_100k_category'] = 'Menos de 0.98'
   }
   else if (datosFemale[i,'suicides_100k_pop']> quantileFem1 && 
            datosFemale[i,'suicides_100k_pop']<= quantileFem2){
-    datosTotales[i,'suicides_100k_category'] = 'Entre el 0.98% y el 6.52%'
+    datosFemale[i,'suicides_100k_category'] = 'Entre 0.98 y 6.52'
   }
   else if (datosFemale[i, 'suicides_100k_pop']> quantileFem2 && 
            datosFemale[i, 'suicides_100k_pop']<= quantileFem3){
-    datosFemale[i,'suicides_100k_category'] = 'Entre el 6.52% y el 17.78%'
+    datosFemale[i,'suicides_100k_category'] = 'Entre 6.52 y 17.78'
   }
   else{
-    datosFemale[i,'suicides_100k_category'] = 'Más del 17.78%'
+    datosFemale[i,'suicides_100k_category'] = 'Más de 17.78'
   }
 }
-knitr::kable(table(datosMale$age, datosMale$suicides_100k_category))
+femaleTable <- table(datosFemale$age, datosFemale$suicides_100k_category)
+knitr::kable(femaleTable[, c('Menos de 0.98',  'Entre 0.98 y 6.52', 'Entre 6.52 y 17.78', 'Más de 17.78')])
+
 #Chi-cuadrado
-chisq.test(datosFemale$age, datosFemale$suicides_100k_category)
+chisq.test(femaleTable)
 ```
 
 ```{r independenciaMale}
@@ -269,26 +266,28 @@ quantileMale3 <- quantile(datosMale$suicides_100k_pop, c(0.75))
 
 for (i in 1:nrow(datosMale)){
   if(datosMale[i,'suicides_100k_pop']<= quantileMale1){
-    datosMale[i,'suicides_100k_category'] = 'Menos del 0.98%'
+    datosMale[i,'suicides_100k_category'] = 'Menos de 0.98'
   }
   else if (datosMale[i,'suicides_100k_pop']> quantileMale1 && 
            datosMale[i,'suicides_100k_pop']<= quantileMale2){
-    datosTotales[i,'suicides_100k_category'] = 'Entre el 0.98% y el 6.52%'
+    datosMale[i,'suicides_100k_category'] = 'Entre 0.98 y 6.52'
   }
   else if (datosMale[i, 'suicides_100k_pop']> quantileMale2 && 
            datosMale[i, 'suicides_100k_pop']<= quantileMale3){
-    datosMale[i,'suicides_100k_category'] = 'Entre el 6.52% y el 17.78%'
+    datosMale[i,'suicides_100k_category'] = 'Entre 6.52 y 17.78'
   }
   else{
-    datosMale[i,'suicides_100k_category'] = 'Más del 17.78%'
+    datosMale[i,'suicides_100k_category'] = 'Más de 17.78'
   }
 }
-knitr::kable(table(datosMale$age, datosMale$suicides_100k_category))
+maleTable <- table(datosMale$age, datosMale$suicides_100k_category)
+knitr::kable(maleTable[, c('Menos de 0.98',  'Entre 0.98 y 6.52', 'Entre 6.52 y 17.78', 'Más de 17.78')])
+
 #Chi-cuadrado
-chisq.test(datosMale$age, datosMale$suicides_100k_category)
+chisq.test(maleTable)
 ```
 
-Atendiendo al p-valor de la salida de la prueba de chi cuadrado, se rechaza la hipótesis de independencia con lo que puede afirmarse que, tanto en hombres como en mujeres, existe relación entre las dos variables analizadas.
+Atendiendo al p-valor de la salida de la prueba de chi cuadrado, se rechaza la hipótesis de independencia con lo que puede afirmarse que, tanto en hombres como en mujeres, existe relación entre las dos variables analizadas. Es importante observar que hay clases en las que hay muy pocos datos (como por ejemplo en maleTable, no hay datos para el rango de edades 5-14 años y más de 17.78 suicidios por cada 100k habitantes). Esto unido a que para la variable de suicidios solo hay 4 clases presentes, puede hacer que el test pierda precisión.
 
 ### Pregunta 6. Contraste de hipótesis para la característica de estudio en una de las muestras
 
